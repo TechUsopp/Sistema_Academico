@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Cursos e Turmas</title>
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Relatório de Alunos por Turma</h1>
+        
+        <div class="form-group">
+            <label for="cursos">Cursos:</label>
+            <select id="cursos">
+                <option value="">Selecione um curso</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="turmas">Turmas:</label>
+            <select id="turmas" disabled>
+                <option value="">Selecione uma turma</option>
+            </select>
+        </div>
+
+        <table id="alunosTable">
+            <thead>
+                <tr>
+                    <th>Alunos</th>
+                    <th>E-mail</th>
+                </tr>
+            </thead>
+            <tbody id="alunosBody">
+                <!-- Alunos serão carregados aqui -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cursosSelect = document.getElementById('cursos');
+            const turmasSelect = document.getElementById('turmas');
+            const alunosTable = document.getElementById('alunosBody');
+
+            // Função para limpar os alunos e turmas
+            function resetAlunos() {
+                alunosTable.innerHTML = ''; // Limpa os alunos
+            }
+
+            function resetTurmas() {
+                turmasSelect.innerHTML = '<option value="">Selecione uma turma</option>';
+                turmasSelect.disabled = true; // Desabilita até que novas turmas sejam carregadas
+                resetAlunos();
+            }
+
+            // Carrega os cursos
+            fetch('http://localhost:3000/cursos')
+                .then(res => res.json())
+                .then(cursos => {
+                    cursos.forEach(curso => {
+                        const option = document.createElement('option');
+                        option.value = curso.curso_id;
+                        option.textContent = curso.curso_nome;
+                        cursosSelect.appendChild(option);
+                    });
+                });
+
+            // Evento ao mudar o curso
+            cursosSelect.addEventListener('change', () => {
+                const curso_id = cursosSelect.value;
+                resetTurmas(); // Limpa turmas e alunos
+
+                if (!curso_id) return; // Se não houver curso selecionado, sai da função
+
+                fetch(`http://localhost:3000/turmas/${curso_id}`)
+                    .then(res => res.json())
+                    .then(turmas => {
+                        turmas.forEach(turma => {
+                            const option = document.createElement('option');
+                            option.value = turma.turma_id;
+                            option.textContent = turma.turma_nome;
+                            turmasSelect.appendChild(option);
+                        });
+                        turmasSelect.disabled = false; // Habilita a seleção de turmas
+                    });
+            });
+
+            // Evento ao mudar a turma
+            turmasSelect.addEventListener('change', () => {
+                const turma_id = turmasSelect.value;
+                resetAlunos(); // Limpa alunos
+
+                if (!turma_id) return; // Se não houver turma selecionada, sai da função
+
+                fetch(`http://localhost:3000/alunos/${turma_id}`)
+                    .then(res => res.json())
+                    .then(alunos => {
+                        alunos.forEach(aluno => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `<td>${aluno.aluno_nome}</td><td>${aluno.aluno_email}</td>`;
+                            alunosTable.appendChild(row);
+                        });
+                    });
+            });
+        });
+    </script>
+</body>
+</html>
